@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"io"
 
 	"golang.org/x/exp/rand"
 )
@@ -108,7 +109,7 @@ func main() {
 			}
 
 			// Read response body
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(io.Reader(resp.Body))
 			if err != nil {
 				log.Fatalf("Failed to read response body: %v", err)
 			}
@@ -116,6 +117,7 @@ func main() {
 
 			// Handle rate limiting
 			if resp.StatusCode == http.StatusTooManyRequests {
+				log.Printf("Rate limited. Retrying in %v...", backoff)
 				if retries >= maxRetries {
 					log.Fatalf("Exceeded maximum retries due to rate limiting.")
 				}
@@ -152,7 +154,7 @@ func main() {
 			break
 		}
 
-		delay := time.Duration(rand.Intn(200)+100) * time.Millisecond
+		delay := time.Duration(rand.Intn(500)+500) * time.Millisecond
 		time.Sleep(delay)
 		fmt.Printf("\rProcessed date: %s", formattedDate)
 	}
